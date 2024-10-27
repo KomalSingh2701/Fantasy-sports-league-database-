@@ -2,12 +2,14 @@ Designed a database for managing a fantasy sports league involves several compon
 
 1.** Entity-Relationship (ER) Model**
 The main entities are:
-
 Teams: Represents the fantasy teams created by users.
 Players: Represents real-life players who can be selected for fantasy teams.
 Matches: Represents real-life matches.
 Fantasy Team Players: Connects players to their fantasy teams.
 Points: Tracks player performance in a given match.
+
+
+
 **Tables Overview**
 Users: Represents the participants of the fantasy league.
 Teams: Represents the fantasy teams.
