@@ -1,0 +1,63 @@
+import sqlite3
+import pandas as pd
+from datetime import datetime, timedelta
+
+# Connect to the Fantasy Sports League Database
+conn = sqlite3.connect('fantasy_league.db')
+cursor = conn.cursor()
+
+# Define date range for the past week
+end_date = datetime.now()
+start_date = end_date - timedelta(days=7)
+
+# Query to fetch player performances over the past week
+query = f"""
+SELECT player_name, team_name, total_points, matches_played, average_points
+FROM player_statistics
+WHERE match_date BETWEEN '{start_date.date()}' AND '{end_date.date()}'
+ORDER BY total_points DESC;
+"""
+
+# Execute query and load data into a DataFrame
+data = pd.read_sql_query(query, conn)
+
+# Highlights: Top 5 performers
+highlights = data.head(5)
+
+# Anomalies: Players with unusual performance changes
+average_points_query = """
+SELECT player_name, team_name, AVG(average_points) as avg_points
+FROM player_statistics
+GROUP BY player_name
+"""
+historical_data = pd.read_sql_query(average_points_query, conn)
+
+# Merge with weekly data and calculate performance change
+merged_data = pd.merge(data, historical_data, on='player_name', suffixes=('_week', '_historical'))
+merged_data['performance_change'] = merged_data['average_points_week'] - merged_data['avg_points']
+
+# Identify anomalies (e.g., performance drop of >50% or surge of >50%)
+anomalies = merged_data[
+    (merged_data['performance_change'] > 0.5 * merged_data['avg_points']) |
+    (merged_data['performance_change'] < -0.5 * merged_data['avg_points'])
+]
+
+# Generate the report
+report = f"""
+Weekly Performance Report ({start_date.date()} to {end_date.date()})
+
+Top Performers:
+{highlights.to_string(index=False)}
+
+Performance Anomalies:
+{anomalies.to_string(index=False)}
+"""
+
+# Save the report to a text file
+with open("weekly_report.txt", "w") as file:
+    file.write(report)
+
+# Close the database connection
+conn.close()
+
+print("Weekly report generated successfully!")
